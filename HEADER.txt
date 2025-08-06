@@ -1,14 +1,12 @@
-"""
+
 Neural Network for MNIST Digit Classification
-============================================
 
 File: neural_network_mnist.py
 Author: [Your Name]
 Date: [Current Date]
 Version: 1.0
 
-Description:
-------------
+
 This script implements a 2-layer neural network from scratch to classify handwritten digits 
 from the MNIST dataset. The network consists of:
 - Input layer: 784 neurons (28x28 pixels)
@@ -22,35 +20,30 @@ The implementation includes:
 - Prediction visualization
 
 Dependencies:
--------------
+
 - Python 3.x
 - NumPy
 - Pandas
 - Matplotlib
 
 Usage:
-------
+
 1. Prepare MNIST data in 'train.csv' format
 2. Run script to train the network
 3. View accuracy metrics during training
 4. Test predictions on sample images
 
 Example:
---------
+
 >>> W1, b1, W2, b2 = gradient_descent(X_train, Y_train, 0.10, 500)
 >>> test_prediction(0, W1, b1, W2, b2)  # View first test prediction
 
 Performance:
-------------
+
 Achieves ~84.4% accuracy on validation set after 500 iterations
 
-License:
---------
-[MIT License or your chosen license]
-
 Notes:
-------
+
 - This is an educational implementation
 - For production use, consider frameworks like TensorFlow/PyTorch
 - Hyperparameters can be tuned for better performance
-"""
