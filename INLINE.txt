@@ -1,0 +1,243 @@
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+
+# Load MNIST training data
+# Expected format: CSV with 784 pixel columns + 1 label column
+data = pd.read_csv('/content/train.csv')
+
+# Convert data to numpy arrays
+# X_train: normalized pixel values (0-1 range), shape (784, m)
+# Y_train: digit labels (0-9), shape (1, m)
+X_train = data.iloc[:,1:].values.T / 255
+Y_train = data.iloc[:,0].values.reshape(1, -1)
+
+def init_params():
+    """
+    Initialize network parameters with random values
+    
+    Returns:
+        W1: Weight matrix for first layer (10, 784)
+        b1: Bias vector for first layer (10, 1)
+        W2: Weight matrix for second layer (10, 10)
+        b2: Bias vector for second layer (10, 1)
+    """
+    W1 = np.random.rand(10, 784) - 0.5  # Centered around 0 (-0.5 to 0.5)
+    b1 = np.random.rand(10, 1) - 0.5
+    W2 = np.random.rand(10, 10) - 0.5
+    b2 = np.random.rand(10, 1) - 0.5
+    return W1, b1, W2, b2
+
+def ReLU(Z):
+    """
+    Rectified Linear Unit activation function
+    
+    Args:
+        Z: Input matrix
+        
+    Returns:
+        Element-wise max(0, Z)
+    """
+    return np.maximum(Z, 0)
+
+def softmax(Z):
+    """
+    Softmax activation function for output layer
+    
+    Args:
+        Z: Input matrix
+        
+    Returns:
+        Probability distribution (sums to 1 along each column)
+    """
+    A = np.exp(Z) / sum(np.exp(Z))
+    return A
+
+def forward_prop(W1, b1, W2, b2, X):
+    """
+    Perform forward propagation through the network
+    
+    Args:
+        W1, b1, W2, b2: Network parameters
+        X: Input data (784, m)
+        
+    Returns:
+        Z1, A1: Hidden layer linear and activation outputs
+        Z2, A2: Output layer linear and activation outputs
+    """
+    Z1 = W1.dot(X) + b1
+    A1 = ReLU(Z1)
+    Z2 = W2.dot(A1) + b2
+    A2 = softmax(Z2)
+    return Z1, A1, Z2, A2
+
+def ReLU_deriv(Z):
+    """
+    Derivative of ReLU function
+    
+    Args:
+        Z: Input matrix
+        
+    Returns:
+        Binary matrix where 1 = Z > 0, 0 otherwise
+    """
+    return Z > 0
+
+def one_hot(Y):
+    """
+    Convert labels to one-hot encoded format
+    
+    Args:
+        Y: Label vector (1, m)
+        
+    Returns:
+        one_hot_Y: One-hot encoded matrix (10, m)
+    """
+    one_hot_Y = np.zeros((Y.size, Y.max() + 1))
+    one_hot_Y[np.arange(Y.size), Y] = 1
+    one_hot_Y = one_hot_Y.T
+    return one_hot_Y
+
+def backward_prop(Z1, A1, Z2, A2, W1, W2, X, Y):
+    """
+    Perform backward propagation to compute gradients
+    
+    Args:
+        Z1, A1, Z2, A2: Layer outputs from forward pass
+        W1, W2: Current weight matrices
+        X: Input data
+        Y: True labels
+        
+    Returns:
+        dW1, db1, dW2, db2: Gradients for each parameter
+    """
+    m = Y.size
+    one_hot_Y = one_hot(Y)
+    
+    # Output layer gradients
+    dZ2 = A2 - one_hot_Y
+    dW2 = 1 / m * dZ2.dot(A1.T)
+    db2 = 1 / m * np.sum(dZ2)
+    
+    # Hidden layer gradients
+    dZ1 = W2.T.dot(dZ2) * ReLU_deriv(Z1)
+    dW1 = 1 / m * dZ1.dot(X.T)
+    db1 = 1 / m * np.sum(dZ1)
+    
+    return dW1, db1, dW2, db2
+
+def update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha):
+    """
+    Update parameters using gradient descent
+    
+    Args:
+        W1, b1, W2, b2: Current parameters
+        dW1, db1, dW2, db2: Parameter gradients
+        alpha: Learning rate
+        
+    Returns:
+        Updated parameters
+    """
+    W1 = W1 - alpha * dW1
+    b1 = b1 - alpha * db1
+    W2 = W2 - alpha * dW2
+    b2 = b2 - alpha * db2
+    return W1, b1, W2, b2
+
+def get_predictions(A2):
+    """
+    Get predicted class from output probabilities
+    
+    Args:
+        A2: Output layer activations
+        
+    Returns:
+        Vector of predicted class indices
+    """
+    return np.argmax(A2, 0)
+
+def get_accuracy(predictions, Y):
+    """
+    Calculate classification accuracy
+    
+    Args:
+        predictions: Model predictions
+        Y: True labels
+        
+    Returns:
+        Accuracy percentage
+    """
+    return np.sum(predictions == Y) / Y.size
+
+def gradient_descent(X, Y, alpha, iterations):
+    """
+    Train the neural network using gradient descent
+    
+    Args:
+        X: Training data (784, m)
+        Y: Training labels (1, m)
+        alpha: Learning rate
+        iterations: Number of training iterations
+        
+    Returns:
+        Trained parameters W1, b1, W2, b2
+    """
+    W1, b1, W2, b2 = init_params()
+    for i in range(iterations):
+        # Forward and backward pass
+        Z1, A1, Z2, A2 = forward_prop(W1, b1, W2, b2, X)
+        dW1, db1, dW2, db2 = backward_prop(Z1, A1, Z2, A2, W1, W2, X, Y)
+        
+        # Parameter update
+        W1, b1, W2, b2 = update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha)
+        
+        # Print progress
+        if i % 10 == 0:
+            predictions = get_predictions(A2)
+            accuracy = get_accuracy(predictions, Y)
+            print(f"Iteration: {i}, Accuracy: {accuracy:.4f}")
+            
+    return W1, b1, W2, b2
+
+# Train the network
+W1, b1, W2, b2 = gradient_descent(X_train, Y_train, 0.10, 500)
+
+def make_predictions(X, W1, b1, W2, b2):
+    """
+    Make predictions using trained network
+    
+    Args:
+        X: Input data (784, m)
+        W1, b1, W2, b2: Trained parameters
+        
+    Returns:
+        Predictions vector
+    """
+    _, _, _, A2 = forward_prop(W1, b1, W2, b2, X)
+    predictions = get_predictions(A2)
+    return predictions
+
+def test_prediction(index, W1, b1, W2, b2):
+    """
+    Test and visualize a single prediction
+    
+    Args:
+        index: Index of test example
+        W1, b1, W2, b2: Trained parameters
+    """
+    current_image = X_train[:, index, None]
+    prediction = make_predictions(current_image, W1, b1, W2, b2)
+    label = Y_train[0, index]
+    
+    print(f"Prediction: {prediction[0]}")
+    print(f"Label: {label}")
+    
+    # Display image
+    current_image = current_image.reshape((28, 28)) * 255
+    plt.gray()
+    plt.imshow(current_image, interpolation='nearest')
+    plt.show()
+
+# Test sample predictions
+for i in range(4):
+    test_prediction(i, W1, b1, W2, b2)
