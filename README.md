@@ -36,7 +36,6 @@ Usage
 
    accuracy = get_accuracy(predictions, Y)
 
-
 Example Output
 
 The training process outputs the accuracy every 10 iterations:
